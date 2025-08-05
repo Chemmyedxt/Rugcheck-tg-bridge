@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
 # === CONFIG ===
-BOT_TOKEN = os.getenv("BOT_TOKEN") or "8371661313:AAGWn2jzvpp2J4M6G9Pb6dOLsKWG2gMawP4"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # === LOGGING ===
 logging.basicConfig(level=logging.INFO)
