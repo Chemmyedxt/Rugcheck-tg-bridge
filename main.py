@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
 # === CONFIG ===
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN") or "8371661313:AAGWn2jzvpp2J4M6G9Pb6dOLsKWG2gMawP4"
 
 # === LOGGING ===
 logging.basicConfig(level=logging.INFO)
@@ -71,4 +71,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text.isalnum() and len(text) >= 32:
         await update.message.reply_text("🔍 Fetching rugcheck analytics, please wait...")
         data = get_rugcheck_data(text)
-        await update
+        await update.message.reply_text(data, parse_mode="Markdown")
+    else:
+        await update.message.reply_text("⚠️ Please send a valid Solana contract address.")
+
+# === MAIN BOT ===
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.run_polling()
