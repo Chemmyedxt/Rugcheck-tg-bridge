@@ -78,3 +78,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Example: `E2gYJLgwup3DPaqYDXKj4kfHb6n4PR2CQyrvt6a2bonk`",
         parse_mode="Markdown"
     )
+
+# Handler for incoming messages
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    contract_address = update.message.text.strip()
+
+    if len(contract_address) not in [43, 44] or not contract_address.isalnum():
+        return
+
+    logger.info(f"Checking: {contract_address}")
+    result = await check_rugcheck(contract_address)
+
+    if "error" in result:
+        await update.message.reply_text(f"❌ {result['error']}")
+        return
+
+    reply = f"📊 *Rugcheck Results for* `{result['contract_address']}`\n\n"
+    for key, value in result.items():
+        if key != "contract_address":
+            reply += f"*{key.replace('_', ' ').title()}*: {value}\n"
+
+    reply += f"\n🔗 [View on Rugcheck](https://rugcheck.xyz/tokens/{contract_address})"
+
+    await update.message.reply_text(reply, parse_mode="Markdown")
+
+# Main entry
+def main():
+    if not BOT_TOKEN:
+        logger.error("❌ BOT_TOKEN not set in environment")
+        return
+
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    logger.info("🤖 Bot is running...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
