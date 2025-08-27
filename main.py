@@ -1,34 +1,34 @@
 import os
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Make sure BOT_TOKEN is set in environment
+# === BOT TOKEN ===
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN is missing. Set it in environment variables.")
 
-def start(update, context):
-    update.message.reply_text("Send me a valid contract address (CA) and I'll give you the Rugcheck link.")
+# === LOGGING ===
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_rugcheck(update, context):
-    ca = update.message.text.strip()
-    
-    # Check for EVM (42 chars, starts with 0x) or Solana (44 chars)
-    if (len(ca) == 42 and ca.startswith("0x")) or len(ca) == 44:
-        url = f"https://rugcheck.xyz/tokens/{ca}"
-        button = InlineKeyboardButton("CHECK ON RUGCHECK", url=url)
-        keyboard = InlineKeyboardMarkup([[button]])
-        update.message.reply_text("Here you go:", reply_markup=keyboard)
-    else:
-        # Ignore invalid messages (does not reply)
-        return
+# === SMART VALIDATOR ===
+def is_valid_ca(text):
+    return text.isalnum() and 32 <= len(text) <= 44
 
-def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+# === MESSAGE HANDLER ===
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, get_rugcheck))
+    if is_valid_ca(text):
+        rugcheck_link = f"https://rugcheck.xyz/tokens/{text}"
+        await update.message.reply_text(
+            f"🔗 [View on Rugcheck]({rugcheck_link})", parse_mode="MarkdownV2"
+        )
+    # No else block → completely ignores invalid text everywhere
 
-    updater.start_polling()
-    updater.idle()
-
+# === BOT LAUNCH ===
 if __name__ == "__main__":
-    main()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.run_polling()
